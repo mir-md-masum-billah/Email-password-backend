@@ -64,6 +64,7 @@ app.get('/test', (req, res) => {
     clients: io.engine.clientsCount,
     env: process.env.NODE_ENV
   });
+  confirm.log('✅ Test endpoint hit:', new Date().toISOString());
 });
 
 // Notify admin
