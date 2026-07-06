@@ -21,26 +21,9 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       "*"
     ];
 
+// server.js - CORS configuration
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // In production, check against allowed origins
-    if (process.env.NODE_ENV === 'production') {
-      // For Railway, we need to allow the frontend URL specifically
-      // Add your frontend URL to the allowedOrigins array above
-      if (allowedOrigins.includes(origin) || origin.includes('railway.app')) {
-        callback(null, true);
-      } else {
-        console.warn('❌ CORS blocked:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    } else {
-      // Development: allow all
-      callback(null, true);
-    }
-  },
+  origin: "*", // ← সব origin allow করুন (শুধু টেস্টিং এর জন্য)
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
