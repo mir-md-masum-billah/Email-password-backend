@@ -5,9 +5,14 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS - সব অরিজিনের জন্য Allow (এখনই কাজ করার জন্য)
+const cors = require('cors');
+
 app.use(cors({
-  origin: "*",
+  origin: [
+    "http://localhost:3000",     // লোকাল ফ্রন্টেন্ড
+    "https://your-frontend.vercel.app", // যদি Vercel-এ ডিপ্লয় করেন
+    "*" // ডেভেলপমেন্টের জন্য (production-এ সরিয়ে দিন)
+  ],
   methods: ["GET", "POST"],
   credentials: true,
 }));
@@ -64,7 +69,7 @@ app.get('/test', (req, res) => {
     clients: io.engine.clientsCount,
     env: process.env.NODE_ENV
   });
-  confirm.log('✅ Test endpoint hit:', new Date().toISOString());
+  console.log('✅ Test endpoint hit:', new Date().toISOString());
 });
 
 // Notify admin
