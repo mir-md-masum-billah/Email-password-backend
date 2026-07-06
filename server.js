@@ -9,12 +9,21 @@ const app = express();
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? [
+      "https://email-password-backend-production.up.railway.app",
       "https://your-frontend.vercel.app",
       "https://your-production-domain.com"
     ]
-    : ["http://localhost:3000", "http://localhost:3001", "*"],
-  methods: ["GET", "POST"],
+    : [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:5500",  // VS Code Live Server
+      "http://localhost:5500",   // VS Code Live Server
+      "null",                    // For local file:// protocol
+      "*"                        // Development - allow all
+    ],
+  methods: ["GET", "POST", "OPTIONS"],
   credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
