@@ -14,8 +14,8 @@ const corsOptions = {
       "https://your-production-domain.com"
     ]
     : [
-      "http://localhost:3000/login",
-      "http://localhost:3000/admin",
+      "http://localhost:3000",
+      "http://localhost:3001",
       "http://127.0.0.1:5500",  // VS Code Live Server
       "http://localhost:5500",   // VS Code Live Server
       "null",                    // For local file:// protocol
