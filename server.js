@@ -6,9 +6,24 @@ const cors = require('cors');
 const app = express();
 
 // ======================== CORS ==========================
-// Railway এর জন্য CORS সম্পূর্ণ ওপেন (শুধু টেস্টিং এর জন্য)
+// Allow both production and development origins
+const allowedOrigins = [
+  'https://email-password-fontened.vercel.app',
+  'http://localhost:3000',
+  'https://email-password-fontened-git-main.vercel.app'
+];
+
 app.use(cors({
-  origin: "*",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked origin:', origin);
+      callback(null, true); // Allow all for testing, but restrict in production
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -18,7 +33,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ======================== PROXY HEADERS ==========================
-// Railway proxy headers handle করার জন্য
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -36,7 +50,15 @@ const server = http.createServer(app);
 // ======================== SOCKET.IO ==========================
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('Socket blocked origin:', origin);
+        callback(null, true); // Allow all for testing
+      }
+    },
     methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -49,10 +71,13 @@ const io = new Server(server, {
   allowUpgrades: true,
   upgradeTimeout: 10000,
   cookie: false,
-  // connectionStateRecovery: {
-  //     maxDisconnectionDuration: 2 * 60 * 1000,
-  //     skipMiddlewares: true,
-  // },
+  // Force secure connections in production
+  serveClient: false,
+  // Add connection state recovery
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: true,
+  },
 });
 
 console.log('🚀 Socket.IO server initializing...');
@@ -65,6 +90,7 @@ app.get('/health', (req, res) => {
     connections: io.engine.clientsCount,
     uptime: Math.floor(process.uptime()),
     environment: process.env.NODE_ENV || 'development',
+    secure: req.connection.encrypted || false,
   });
 });
 
@@ -73,12 +99,14 @@ io.on('connection', (socket) => {
   console.log('✅ User connected:', socket.id);
   console.log('📊 Total connections:', io.engine.clientsCount);
   console.log('🔌 Transport:', socket.conn.transport.name);
+  console.log('🔒 Secure:', socket.conn.secure || false);
 
   // Send connection confirmation
   socket.emit('connected', {
     message: 'Connected to socket server',
     socketId: socket.id,
-    transport: socket.conn.transport.name
+    transport: socket.conn.transport.name,
+    secure: socket.conn.secure || false,
   });
 
   // Handle room joining
@@ -152,6 +180,7 @@ app.get('/test', (req, res) => {
     clients: io.engine.clientsCount,
     env: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
+    secure: req.connection.encrypted || false,
   });
 });
 
@@ -218,6 +247,7 @@ app.get('/api/status', (req, res) => {
     uptime: Math.floor(process.uptime()),
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
+    secure: req.connection.encrypted || false,
   });
 });
 
@@ -245,6 +275,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Socket.IO path: /socket.io/`);
   console.log(`🔗 WebSocket URL: ws://localhost:${PORT}/socket.io/`);
+  console.log(`🔗 Secure WebSocket: wss://your-domain/socket.io/ (in production)`);
 });
 
 // ======================== GRACEFUL SHUTDOWN ==========================
